@@ -91,6 +91,12 @@ def starSearch(problem, data_structure, use_cost = False, heuristic = None):
     while not queue.isEmpty():
         node = queue.pop()
 
+        if node['state'] in visited:
+            continue
+
+        if problem.isGoalState(node['state']):
+            return node['path']
+
         # Mark state as visited
         visited.append(node['state'])
 
@@ -102,8 +108,6 @@ def starSearch(problem, data_structure, use_cost = False, heuristic = None):
 
             if child_state not in visited:
                 path_to_child = node['path'] + [child_direction]
-                if problem.isGoalState(child_state):
-                    return path_to_child
                 child = {'state': child_state, 'path': path_to_child}
 
                 cost = problem.getCostOfActions(path_to_child)
@@ -113,7 +117,6 @@ def starSearch(problem, data_structure, use_cost = False, heuristic = None):
 
         if queue.isEmpty():
             return node['path']
-    return None
 
 def depthFirstSearch(problem):
     return starSearch(problem, util.Stack)
