@@ -6,7 +6,12 @@
 import java.util.*;
 
 public class gacircle {
-
+	static final int MAX_ITERATION = 1000;
+	static final double MUTATION_RATE = 0.2; // Chance to mutate a portion of an individual
+	static final int MAX_STATIC_DISK_RADIUS = 3;
+	static final int BOUNDARY_WIDTH = 10;
+	static final int BOUNDARY_HEIGHT = 10;
+	
 	double X_location;
 	double Y_location;
 	double radius;
@@ -46,12 +51,15 @@ public class gacircle {
 			double radius = distance - c.radius;
 			best_radius = Math.min(best_radius, radius);
 		}
-		return best_radius;
+		return Math.max(0.0, best_radius);
 	}
 
 	static void eval_fitness(ArrayList<gacircle> population, gacircle[] static_disks) {
 		for(gacircle c : population) {
 			c.fitness = fitness(c, static_disks);
+			
+			// Radius is also the fitness value in this case
+			c.radius = c.fitness;
 		}
 	}
 
@@ -83,24 +91,51 @@ public class gacircle {
 		return null;
 	}
 
-	// TODO
 	static void mutate(gacircle circle) {
-
-	}
-	
-	// TODO
-	static gacircle crossover(gacircle m, gacircle f) {
-		return null;
-	}
-	
-	// TODO
-	static gacircle answersofar(ArrayList<gacircle> population, gacircle[] static_disks) {
 		
-		return null;
+		// TODO Would add be better?
+		
+		if(random.nextDouble() <= MUTATION_RATE) {
+			circle.X_location = random.nextDouble() * BOUNDARY_WIDTH;
+		}
+		
+		if(random.nextDouble() <= MUTATION_RATE) {
+			circle.Y_location = random.nextDouble()  * BOUNDARY_HEIGHT;
+		}
+	}
+	
+	static gacircle crossover(gacircle m, gacircle f) {
+		double x = m.X_location;
+		double y = m.Y_location;
+		
+		// 50/50 chance of getting the x and y from female
+		
+		if(random.nextDouble() < 0.5) {
+			x = f.X_location;
+		}
+		
+		if(random.nextDouble() < 0.5) {
+			y = f.Y_location;
+		}
+		
+		return new gacircle(x, y, 0, 0);
+	}
+	
+	static gacircle answersofar(ArrayList<gacircle> population, gacircle[] static_disks) {
+		if(population.size() == 0)
+			return null;
+		
+		// Look for best
+		gacircle best = population.get(0);
+		for(gacircle c : population) {
+			if(c.fitness > best.fitness) {
+				best = c;
+			}
+		}
+		return best;
 	}
 
 	static gacircle produce(ArrayList<gacircle> population, gacircle[] static_disks, Splat pl) {
-		final int MAX_ITERATION = 1000;
 		int count = 0;
 		int current_generation = 0;
 		int generation = 0;
@@ -117,9 +152,9 @@ public class gacircle {
 			gacircle F = select(population);
 			gacircle M = select(population);
 
-			int luck = random.nextInt(100);
+			float luck = random.nextFloat();
 
-			if(luck < 80) {
+			if(luck < 0.80f) {
 				gacircle child1 = crossover(F, M);
 				gacircle child2 = crossover(M, F);
 
@@ -176,9 +211,9 @@ public class gacircle {
 
 		// Create 5 random circle to within the rectangle (0,0), (0,10), (10,0), and (10,10)
 		for(int i = 0; i < STATIC_DISK_COUNT; i++) {
-			double x = random.nextInt(10) + random.nextFloat();
-			double y = random.nextInt(10) + random.nextFloat();
-			double r = random.nextInt(3) + random.nextFloat();
+			double x = random.nextInt(BOUNDARY_WIDTH) + random.nextFloat();
+			double y = random.nextInt(BOUNDARY_HEIGHT) + random.nextFloat();
+			double r = random.nextInt(MAX_STATIC_DISK_RADIUS) + random.nextFloat();
 			static_disks[i] = new gacircle(x, y, r, 0);
 		}
 
