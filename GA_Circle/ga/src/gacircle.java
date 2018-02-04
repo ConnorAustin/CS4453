@@ -5,9 +5,10 @@
 
 import java.util.*;
 
-public class gacircle {
+public class gacircle implements Comparable<gacircle> {
+	static final int STATIC_DISK_COUNT = 5; // Graphical part will not change
 	static final int MAX_ITERATION = 1000;
-	static final double MUTATION_RATE = 0.2; // Chance to mutate a portion of an individual
+	static final double MUTATION_RATE = 0.7; // Chance to mutate a portion of an individual
 	static final int MAX_STATIC_DISK_RADIUS = 3;
 	static final int BOUNDARY_WIDTH = 10;
 	static final int BOUNDARY_HEIGHT = 10;
@@ -28,20 +29,30 @@ public class gacircle {
 		fitness = -1;
 	}
 	
+	@Override
+	public int compareTo(gacircle c)
+	{
+	     return Double.compare(selection, c.selection);
+	}
+	
 	public boolean equals(gacircle c) {
+		if(c == null) return false;
+		
 		return X_location == c.X_location && Y_location == c.Y_location;
 	}
 	
 	@Override
 	public String toString() {
-		return "x-location: " + X_location + ",y-location: " + Y_location + ", radius: " + radius;
+		return "x: " + X_location + ", y: " + Y_location + ", r: " + radius;
 	}
 	
 	static double fitness(gacircle circle, gacircle[] static_disks) {
 		// Fitness is the best radius a circle can have at its location 
 		
 		double best_radius = -1;
+		boolean has_radius = false;
 		
+		// Limit radius by static disks
 		for(gacircle c : static_disks) {
 			// Distance between two circle centers
 			double x = circle.X_location - c.X_location;
@@ -49,8 +60,28 @@ public class gacircle {
 			double distance = Math.sqrt(x * x + y * y);
 			
 			double radius = distance - c.radius;
-			best_radius = Math.min(best_radius, radius);
+			if(has_radius) {
+				best_radius = Math.min(best_radius, radius);
+			} else {
+				best_radius = radius;
+				has_radius = true;
+			}
 		}
+		
+		// Limit radius by walls
+		
+		// Limit by left wall
+		best_radius = Math.min(best_radius, circle.X_location);
+		
+		// Limit by top wall
+		best_radius = Math.min(best_radius, circle.Y_location);
+		
+		// Limit by right wall
+		best_radius = Math.min(best_radius, BOUNDARY_WIDTH - circle.X_location);
+		
+		// Limit by bottom wall
+		best_radius = Math.min(best_radius, BOUNDARY_HEIGHT - circle.Y_location);
+		
 		return Math.max(0.0, best_radius);
 	}
 
@@ -66,12 +97,12 @@ public class gacircle {
 	static void roulette(ArrayList<gacircle> population) {
 		double all_fitness = 0;
 		for(gacircle c : population) {
-			all_fitness = c.fitness;
+			all_fitness += Math.max(1, c.fitness);
 		}
 		
 		double slot_start = 0;
 		for(gacircle c : population) {			
-			double slice_size = c.fitness / all_fitness;
+			double slice_size = Math.max(1, c.fitness) / all_fitness;
 			
 			c.selection = slot_start + slice_size;
 			slot_start += slice_size;
@@ -79,11 +110,13 @@ public class gacircle {
 	}
 
 	static gacircle select(ArrayList<gacircle> population) {
+		Collections.sort(population);
+		
 		float location = random.nextFloat();
 		
 		// Find which location in the roulette this landed
 		for(gacircle c : population) {
-			if(c.selection <= location) {
+			if(c.selection >= location) {
 				return c;
 			}
 		}
@@ -92,9 +125,6 @@ public class gacircle {
 	}
 
 	static void mutate(gacircle circle) {
-		
-		// TODO Would add be better?
-		
 		if(random.nextDouble() <= MUTATION_RATE) {
 			circle.X_location = random.nextDouble() * BOUNDARY_WIDTH;
 		}
@@ -176,10 +206,11 @@ public class gacircle {
 
 			// Find the best answer so far
 			gacircle A = answersofar(population, static_disks);
+			System.out.println(A);
 			
 			if(A != null) {
 				// Update the screen
-				pl.update(current);
+				pl.update(A);
 				
 				try {
 					Thread.sleep(20);
@@ -200,9 +231,6 @@ public class gacircle {
 	}
 
 	public static void main(String[] args) {
-		
-		final int STATIC_DISK_COUNT = 5;
-		
 		random = new Random();
 		
 		Scanner scan = new Scanner(System.in);
