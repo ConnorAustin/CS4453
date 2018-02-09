@@ -8,7 +8,7 @@ import java.util.*;
 public class gacircle implements Comparable<gacircle> {
 	static final int STATIC_DISK_COUNT = 5; // Graphical part will not change
 	static final int MAX_ITERATION = 1000;
-	static final double MUTATION_RATE = 0.7; // Chance to mutate a portion of an individual
+	static final double MUTATION_RATE = 0.5; // Chance to mutate a portion of an individual
 	static final int MAX_STATIC_DISK_RADIUS = 3;
 	static final int BOUNDARY_WIDTH = 10;
 	static final int BOUNDARY_HEIGHT = 10;
@@ -174,6 +174,15 @@ public class gacircle implements Comparable<gacircle> {
 		while(count < MAX_ITERATION) {
 			// Evaluate the fitness of the population in S
 			eval_fitness(population, static_disks);
+			
+			for(gacircle c : population) {
+				pl.supdate(c);
+				try {
+					Thread.sleep(20);
+				} catch(InterruptedException ex) {
+					Thread.currentThread().interrupt();
+				}
+			}
 
 			// Create the roulette wheel for the population in S
 			roulette(population);

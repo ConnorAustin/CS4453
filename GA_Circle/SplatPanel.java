@@ -3,6 +3,8 @@ import java.awt.*;
 
 public class SplatPanel extends JPanel
 {
+   static final long serialVersionUID = 420;
+   
    private Circle circle1, circle2, circle3, circle4, circle5, circle6, circle7;
    public SplatPanel(gacircle[] G, gacircle A)
    {
@@ -42,9 +44,9 @@ public class SplatPanel extends JPanel
     }
     public void supdate(gacircle A)
     {
-        circle7.setX((int)((A.X_location - 0.05) * 30));
-        circle7.setY((int)((A.Y_location - 0.05) * 30));
-        circle7.setDiameter((int)(0.05 * 60));
+        circle7.setX((int)((A.X_location - A.radius) * 30));
+        circle7.setY((int)((A.Y_location - A.radius) * 30));
+        circle7.setDiameter((int)(A.radius * 60));
         circle7.setColor(Color.blue);
     }
    
