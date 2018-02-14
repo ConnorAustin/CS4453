@@ -1,4 +1,8 @@
-public class Broker {	
+import java.util.Random;
+
+public class Broker implements Comparable<Broker> {	
+	static Random random = new Random();
+	
 	/* 
 	 * Algorithm that the broker uses.
 	 * 
@@ -7,7 +11,7 @@ public class Broker {
 	 *     Sell otherwise
 	 *     
 	 * e = EMA (Exponential Moving Average)
-	 *     Buy if the actual price is greater than the SMA over a time period
+	 *     Buy if the actual price is greater than the EMA over a time period
 	 *     Sell otherwise
 	 *     
 	 * m = MAX
@@ -24,72 +28,133 @@ public class Broker {
 	 * 
 	 * Example string: s020&e200|m420
 	 */
-	String algo;
+	public String algo;
 	
-	// TODO gather variables
+	// Genetic algorithm fitness
+	public double fitness = -1.0f;
+	
+	// Genetic algorithm selection value
+	public double selection;
 	
 	public Broker(String algo) {
 		this.algo = algo;
 	}
 	
-	String evalRule(String rule, Market m) {
+	@Override
+    public boolean equals(final Object obj) {
+		try {
+			Broker b = (Broker)obj;
+			return b.algo.equals(algo);
+		} catch(Exception e) {
+			return false;
+		}
+	}
+	
+	@Override
+	public String toString() {
+		return algo;
+	}
+	
+	@Override
+	public int compareTo(Broker o) {
+		return Double.compare(selection, o.selection);
+	}	
+	
+	static Broker randomBroker() {
+		String[] methods = new String[] {"s", "e", "m"};
+		String[] ops = new String[] {"&", "|"};
+		
+		String algo = "";
+		algo += methods[random.nextInt(methods.length)];
+		algo += String.format("%03d", random.nextInt(1000));
+		
+		algo += ops[random.nextInt(ops.length)];
+		
+		algo += methods[random.nextInt(methods.length)];
+		algo += String.format("%03d", random.nextInt(1000));
+		
+		algo += ops[random.nextInt(ops.length)];
+		
+		algo += methods[random.nextInt(methods.length)];
+		algo += String.format("%03d", random.nextInt(1000));
+		
+		Broker b = new Broker(algo);
+		b.correctRules();
+		return b;
+	}
+	
+	/*
+	 * Returns true for buy and false for sell otherwise
+	 */
+	boolean evalRule(String rule, Market m) {
 		String periodStr = rule.substring(1, 4);
 		int period = Integer.parseInt(periodStr);
 		
 		char r = rule.charAt(0);
 		
-		boolean buy = false;
-		
 		switch(r) {
 			case 's':
-				buy = m.currentPrice() > m.SMA(period);
-				break;
+				return m.currentPrice() > m.SMA(period);
 			case 'e':
-				buy = m.currentPrice() > m.EMA(period);
-				break;
+				return m.currentPrice() > m.EMA(period);
 			case 'm':
-				buy = m.currentPrice() > m.MAX(period);
-				break;
+				return m.currentPrice() > m.MAX(period);
 		}
-		
-		if(buy) {
-			return "BUY";
-		}
-		return "SELL";
+		return false;
 	}
 	
-	/*
-	 * Returns BUY, SELL or DO_NOTHING
-	 */
-	String combineActions(String action1, String action2, String op) {
+	boolean combineActions(boolean action1, boolean action2, String op) {
 		if(op.equals("&")) {
-			if(!action1.equals(action2)) {
-				return "DO_NOTHING";
-			}
-			return action1;
+			return action1 & action2;
 		} else {
-			if(action1.equals("BUY") || action2.equals("BUY")) {
-				return "BUY";
-			}
-			if(action1.equals("SELL") || action2.equals("SELL")) {
-				return "SELL";
-			}
-			return "DO_NOTHING";
+			return action1 | action2;
 		}
 	}
 	
-	/*
-	 * Returns BUY, SELL or DO_NOTHING
-	 */
-	public String decideAction(Market m) {
-		String action1 = evalRule(algo.substring(0, 4), m);
-		String action2 = evalRule(algo.substring(5, 9), m);
-		String action3 = evalRule(algo.substring(10, 14), m);
+	public boolean decideAction(Market m) {
+		boolean action1 = evalRule(algo.substring(0, 4), m);
+		boolean action2 = evalRule(algo.substring(5, 9), m);
+		boolean action3 = evalRule(algo.substring(10, 14), m);
 		
 		String op1 = algo.substring(4, 5);
 		String op2 = algo.substring(9, 10);
 		
-		String tmp = combineActions(action1, action2, op1);
+		boolean tmp = combineActions(action1, action2, op1);
 		return combineActions(tmp, action3, op2);
-	}	
+	}
+	
+	public void correctRules() {
+		int[] rules = new int[] {0, 5, 10};
+		boolean duplicateRules = false;
+		
+		int duplicate1 = 0;
+		int duplicate2 = 0;
+		
+		for(duplicate1 = 0; duplicate1 < rules.length; duplicate1++) {
+			for(duplicate2 = duplicate1 + 1; duplicate2 < rules.length; duplicate2++) {
+				if(algo.charAt(rules[duplicate1]) == algo.charAt(rules[duplicate2])) {
+					duplicateRules = true;
+					break;
+				}
+			}
+			if(duplicateRules) { 
+				break;
+			}
+		}
+		
+		if(!duplicateRules) {
+			return;
+		}
+		
+		int duplicateToChange = duplicate1;
+		if(random.nextInt(2) != 0) {
+			duplicateToChange = duplicate2;
+		}
+		
+		StringBuilder newAlgo = new StringBuilder(algo);
+		char[] ruleNames = new char[] {'m', 's', 'e'}; 
+		newAlgo.setCharAt(rules[duplicateToChange], ruleNames[random.nextInt(ruleNames.length)]);
+		algo = newAlgo.toString();
+		correctRules();
+	}
 }

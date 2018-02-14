@@ -1,12 +1,14 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Market {
 	// How much to charge for every BUY or SELL action
 	final double TRANSACTION_FEE = 7.0;
-		
-	// How many stocks to purchase when a BUY action is sent
-	final int STOCKS_BUY_AMT = 1;
-	
+
 	// The current stock index
 	int stockIndex;
 	
@@ -26,7 +28,7 @@ public class Market {
 		}
 		
 		double sum = 0;
-		double[] prices = stocks.prices(stockIndex, period);
+		double[] prices = stocks.prices(stockIndex - 1, period);
 		for(double price : prices) {
 			sum += price;
 		}
@@ -59,7 +61,7 @@ public class Market {
 			return 0;
 		}
 		
-		double[] prices = stocks.prices(stockIndex, period);
+		double[] prices = stocks.prices(stockIndex - 1, period);
 		
 		double biggestPrice = -1.0;
 		for(double price : prices) {
@@ -68,49 +70,79 @@ public class Market {
 		return biggestPrice;
 	}
 	
-	public double simulateWithBroker(Broker b, int startingAmt, Date startDate, Date endDate) {		
+	public double simulateWithBroker(Broker b, double startingAmt, Date startDate, Date endDate) throws IOException {
+		return simulateWithBroker(b, startingAmt, startDate, endDate, false);
+	}
+	
+	public double simulateWithBroker(Broker b, double startingAmt, Date startDate, Date endDate, boolean writeResults) throws IOException {
+		BufferedWriter writer = null;
+		DateFormat df = new SimpleDateFormat("MM/dd/yyyy");
+
+		if(writeResults) {
+			 writer = new BufferedWriter(new FileWriter("result.csv"));
+			 writer.write(b.algo + "," + startingAmt + "\n");
+		}
+		
 		stockIndex = stocks.indexOfPrice(startDate);
 		int endStockIndex = stocks.indexOfPrice(endDate);
 		
-		double curAmt = startingAmt;
+		double account = startingAmt;
 		double gain = 0;
 		
-		int stockAmt = 0;
+		int shares = 0;
+		
+		boolean hadOneTransaction = true;
 		
 		while(stockIndex != endStockIndex) {
 			// Ask the broker what it wants to do
-			String action = b.decideAction(this);
+			boolean buy = b.decideAction(this);
 			
-			if(action.equals("BUY")) {
-				double fee = TRANSACTION_FEE + currentPrice() * STOCKS_BUY_AMT;
-				if(curAmt >= fee) {
-					curAmt -= fee;
-					stockAmt += STOCKS_BUY_AMT;
+			if(buy) {
+				int purchasableShares = (int) ((account - TRANSACTION_FEE) / currentPrice());
+				if(purchasableShares > 0) {
+					account -= TRANSACTION_FEE;
+					account -= currentPrice() * purchasableShares;
+					
+					shares += purchasableShares;
+					hadOneTransaction = true;
+					if(writeResults) {
+						writer.write(df.format(stocks.date(stockIndex)) + "," + currentPrice() + "," + "BUY" + "," + (account + gain) + "\n");
+					}
+				} else {
+					if(writeResults) {
+						writer.write(df.format(stocks.date(stockIndex)) + "," + currentPrice() + "," + "WAIT" + "," + (account + gain) + "\n");
+					}
 				}
-			}
-			
-			if(action.equals("SELL")) {
-				double fee = TRANSACTION_FEE;
-				if(curAmt >= fee) {
-					curAmt -= fee;
-					curAmt += stockAmt * currentPrice();
-					stockAmt = 0;
+			} else {
+				if(shares > 0) {
+					account -= TRANSACTION_FEE;
+					account += shares * currentPrice();
+					
+					shares = 0;
+					hadOneTransaction = true;
+					if(writeResults) {
+						writer.write(df.format(stocks.date(stockIndex)) + "," + currentPrice() + "," + "SELL" + "," + (account + gain) + "\n");
+					}
+				} else {
+					if(writeResults) {
+						writer.write(df.format(stocks.date(stockIndex)) + "," + currentPrice() + "," + "WAIT" + "," + (account + gain) + "\n");
+					}
 				}
 			}
 			
 			// If the current amount is less than the starting amount ...
-			if(curAmt < startingAmt && gain > 0) {
+			if(account < startingAmt && gain > 0) {
 				// ... Use the money in gain to get it back to the start amount if we have any
-				double diff = Math.min(gain, startingAmt - curAmt);
-				curAmt += diff;
+				double diff = Math.min(gain, startingAmt - account);
+				account += diff;
 				gain -= diff;
 			}
 			
 			// If the current amount is more than the starting amount ...
-			if(curAmt > startingAmt) {
+			if(account > startingAmt) {
 				// ... Add the difference to the gain and set the current amount back to the start
-				double diff = curAmt - startingAmt;
-				curAmt = startingAmt;
+				double diff = account - startingAmt;
+				account = startingAmt;
 				gain += diff;
 			}
 			
@@ -118,6 +150,24 @@ public class Market {
 			stockIndex++;
 		}
 		
-		return gain;
+		// Sell off any remaining stocks at the end
+		if(shares > 0) {
+			gain += shares * currentPrice() - TRANSACTION_FEE;
+			if(writeResults) {
+				writer.write(df.format(stocks.date(stockIndex)) + "," + currentPrice() + "," + "SELL" + "," + (account + gain) + "\n");
+			}
+		}
+		
+		double total = account + gain;
+
+		// Punish brokers that do not participate in the market
+		if(!hadOneTransaction) {
+			total /= 2.0;
+		}
+		
+		if(writeResults) {
+			writer.close();
+		}
+		return total;
 	}
 }

@@ -34,6 +34,10 @@ public class StocksReader {
 		return 0;
 	}
 	
+	public Date date(int index) {
+		return closingPrice.get(index).date;
+	}
+	
 	public double price(int index) {
 		if(index < 0 || index >= closingPrice.size()) {
 			System.err.println("Warning: Trying to get an index in the stocks that isn't in the file '" + filename + "'.");
