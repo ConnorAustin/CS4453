@@ -1,23 +1,22 @@
-import java.io.IOException;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
 public class GA {
-	final static int STARTING_POPULATION = 20;
-	final static int GENERATION_LIMIT = 200;
+	public final static int STARTING_POPULATION = 20;
+	public final static int GENERATION_LIMIT = 200;
 	
-	final static double MUTATION_RATE = 0.001;
-	final static double CROSSOVER_RATE = 0.8;
+	public final static double MUTATION_RATE = 0.001;
+	public final static double CROSSOVER_RATE = 0.8;
 	
-	final static double TEST_STARTING_AMOUNT = 20000;
-	final static String TEST_STARTING_DATE = "2017-2-9";
-	final static String TEST_ENDING_DATE = "2018-2-9";
+	public final static double TEST_STARTING_AMOUNT = 20000;
+	public final static String TEST_STARTING_DATE = "2017-2-9";
+	public final static String TEST_ENDING_DATE = "2018-2-9";
 	
 	static Random random;
 	
-	static ArrayList<Market> testMarkets = new ArrayList<Market>();
+	public static ArrayList<Market> testMarkets = new ArrayList<Market>();
 	
 	static double fitness(Broker b) throws IOException {
 		double fitnessSum = 0;
@@ -100,8 +99,6 @@ public class GA {
 	}
 	
 	static Broker crossover(Broker m, Broker f) {
-		// TODO update to fix
-		
 		int crossoverIndex = random.nextInt(m.algo.length());
 		String childAlgo = m.algo.substring(0, crossoverIndex) + 
 				           f.algo.substring(crossoverIndex, f.algo.length());
