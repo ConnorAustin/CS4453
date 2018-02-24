@@ -45,6 +45,7 @@ public class TicTacToe {
 		frame.setVisible(true);
 		frame.setSize(500, 500);// set frame size and let teh game begin
 	}
+	
 
 	public static int xOrO=0; // used for counting
 

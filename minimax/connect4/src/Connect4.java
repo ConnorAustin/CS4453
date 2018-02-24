@@ -19,7 +19,7 @@ public class Connect4 {
 	}
 	
 	private static void gamePanel(){
-		JFrame frame = new JFrame ("Tic Tac Toe");
+		JFrame frame = new JFrame ("Connect 4");
 		frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
 
 
