@@ -1,0 +1,31 @@
+%relations
+pollution -> cancer
+smoker -> cancer
+cancer -> xray
+cancer -> dsypnea
+
+%tables
+pollution {
+    : 0.1
+}
+
+smoker {
+    : 0.3
+}
+
+cancer {
+    smoker, pollution: 0.95
+    !smoker, pollution: 0.2
+    smoker, !pollution: 0.3
+    !smoker, !pollution: 0.001
+}
+
+xray {
+    cancer: 0.9
+    !cancer: 0.2
+}
+
+dsypnea {
+    cancer: 0.65
+    !cancer: 0.3
+}

@@ -1,6 +1,3 @@
-
-% Dynamic states the program changes during runtime
-
 :- dynamic(known/1).
 
 whatsnakeis(X,Y):-
@@ -45,13 +42,6 @@ size(X,Y):- known(size(X,Y)).
 
 dorsal_pattern(X,Y):- known(dorsal_pattern(X,Y)).
 
-known(has_rattle(bob,yes)).
-known(size(bob,large)).
-known(dorsal_pattern(bob,diamonds)).
-known(has_rattle(chris,yes)).
-known(size(kim,small)).
-known(dorsal_pattern(ken,stripped)).
-
 
 ask_rattle(X,Y):-
        write('does '),
@@ -60,6 +50,7 @@ ask_rattle(X,Y):-
        nl, nl,
        read(Y),
        asserta(known(has_rattle(X,Y))).
+
 ask_size(X,Y):-
        write('what size is '),
        write(X),
@@ -67,6 +58,7 @@ ask_size(X,Y):-
        nl, nl,
        read(Y),
        asserta(known(size(X,Y))).
+
 ask_dorsal(X,Y):-
        write('what dorsal patern does '),
        write(X),
