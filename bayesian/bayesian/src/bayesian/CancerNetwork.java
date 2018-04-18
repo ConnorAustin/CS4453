@@ -29,13 +29,6 @@ public class CancerNetwork extends Network {
 		this.prob("xray", "!cancer", 0.2);
 		
 		this.prob("dyspnea", "cancer", 0.65);
-		this.prob("dyspnea", "!cancer", 0.2);
-	}
-	
-	public static void main(String[] args) {
-		CancerNetwork cn = new CancerNetwork();
-		Bayesian b = new Bayesian();
-		
-		System.out.println(b.query("xray|smoker", cn));
+		this.prob("dyspnea", "!cancer", 0.3);
 	}
 }
