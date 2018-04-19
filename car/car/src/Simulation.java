@@ -9,16 +9,17 @@ class StateRef {
 }
 
 class QLearning {
-	final int posDiscretation = 11;
-	final int velDiscretation = 11;
+	final int posDiscretation = 300;
+	final int velDiscretation = 3;
 	final int actions = 3;
 	
 	double learningRate;
 	double discount;
-	
+		
 	Random rand = new Random();
 	
-	double[][][] qTable = new double[posDiscretation][velDiscretation][actions];
+	double [][][] qTable         = new double [posDiscretation][velDiscretation][actions];
+	boolean[][][] exploredValues = new boolean[posDiscretation][velDiscretation][actions];
 	
 	public QLearning(double learningRate, double discount) {
 		this.learningRate = learningRate;
@@ -29,18 +30,25 @@ class QLearning {
 		for(int i = 0; i < posDiscretation; i++) {
 			for(int j = 0; j < velDiscretation; j++) {
 				for(int a = 0; a < actions; a++) {
-					qTable[i][j][a] = rand.nextDouble() * 0.1;
+					qTable[i][j][a] = -rand.nextDouble();
+					exploredValues[i][j][a] = false;
 				}
 			}
 		}
 	}
 	
-	public void learn(double reward, StateRef oldState, StateRef newState, int action) {
+	public void learn(double reward, StateRef oldState, StateRef newState) {
 		double oldStateVal = qTable[oldState.posIndex][oldState.velIndex][oldState.actionIndex];
 		double newStateVal = qTable[newState.posIndex][newState.velIndex][newState.actionIndex];
 		
-		double updatedVal = oldStateVal + learningRate * (reward + discount * newStateVal - oldStateVal);
+		double updatedVal;
 		
+		if(!exploredValues[oldState.posIndex][oldState.velIndex][oldState.actionIndex]) {
+			exploredValues[oldState.posIndex][oldState.velIndex][oldState.actionIndex] = true;
+			updatedVal = reward;
+		} else {
+			updatedVal = oldStateVal + learningRate * (reward + discount * newStateVal - oldStateVal);
+		}
 		qTable[oldState.posIndex][oldState.velIndex][oldState.actionIndex] = updatedVal;
 	}
 	
@@ -56,7 +64,7 @@ class QLearning {
 			}
 		}
 		
-		if(simulatedAnnealing && rand.nextFloat() < 0.05f) {
+		if(simulatedAnnealing && rand.nextFloat() < 0.01f) {
 			return rand.nextInt(3) - 1;
 		}
 		
@@ -80,7 +88,7 @@ class QLearning {
 		if(velIndex >= velDiscretation) {
 			velIndex = velDiscretation - 1;
 		}
-		int actionIndex = action + 1; 
+		int actionIndex = action + 1;
 				
 		StateRef ref = new StateRef();
 		ref.posIndex = posIndex;
@@ -88,10 +96,6 @@ class QLearning {
 		ref.actionIndex = actionIndex;
 		
 		return ref;
-	}
-	
-	public void updateState(int state, int action) {
-		
 	}
 }
 
@@ -113,25 +117,26 @@ public class Simulation extends JPanel {
 	    
 	    mcar car = new mcar();
 	    
-	    QLearning ql = new QLearning(0.015, 0.7);
+	    QLearning ql = new QLearning(0.2, 0.8);
 	    	
-	    //for(int e = 0; e < 5; e++)
-	    for(double pos = mcar.POS_RANGE[0]; pos < mcar.POS_RANGE[1]; pos += 0.001) {
-	    		for(double vel = mcar.VEL_RANGE[0]; vel < mcar.VEL_RANGE[1]; vel += 0.001) {
+	    for(int e = 0; e < 1000; e++)
+	    for(double pos = mcar.POS_RANGE[0]; pos <= mcar.POS_RANGE[1]; pos += 0.02) {
+	    		for(double vel = mcar.VEL_RANGE[0]; vel <= mcar.VEL_RANGE[1]; vel += 0.07) {
 		    		int steps = 0;
 		    		
 		    		car.set_curr_pos(pos);
 		    	    car.set_curr_vel(vel);
 		    	    
-		    		StateRef oldState = ql.getState(car, 0);
-		    	    
-			    while(!car.reached_goal() && steps < 200) {
+		    		StateRef oldState = ql.getState(car, 1);
+			    while(!car.reached_goal() && steps < 100) {
 		            int act = ql.chooseAction(oldState, true);
-		            
 		            car.update_position_velocity(act);
 		            
-		            StateRef newState = ql.getState(car, act);
-		            ql.learn(car.reward(), oldState, newState, act);
+		            StateRef newState = ql.getState(car, 0);
+		            int nextAct = ql.chooseAction(newState, true);
+		            newState = ql.getState(car, nextAct);
+		            
+		            ql.learn(car.reward(), oldState, newState);
 		            oldState = newState;
 		            
 		            panel.updateCircle(car.curr_pos());
@@ -149,12 +154,15 @@ public class Simulation extends JPanel {
 	    while(!car.reached_goal()) {
             int act = ql.chooseAction(oldState, false);
             
-            panel.circleAction(act);
-            
             car.update_position_velocity(act);
             
+            
+            // REMOVE ME
+            panel.circleAction(act);
+            
+            
+            
             StateRef newState = ql.getState(car, act);
-            //ql.learn(car.reward(), oldState, newState, act);
             oldState = newState;
             
             panel.updateCircle(car.curr_pos());
