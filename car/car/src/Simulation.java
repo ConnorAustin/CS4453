@@ -156,12 +156,6 @@ public class Simulation extends JPanel {
             
             car.update_position_velocity(act);
             
-            
-            // REMOVE ME
-            panel.circleAction(act);
-            
-            
-            
             StateRef newState = ql.getState(car, act);
             oldState = newState;
             
